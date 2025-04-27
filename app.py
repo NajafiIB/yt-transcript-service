@@ -1,7 +1,10 @@
 from flask import Flask, request, jsonify
 from youtube_transcript_api import YouTubeTranscriptApi
 import os
-
+proxies = {
+    'http': 'socks5://127.0.0.1:9050',
+    'https': 'socks5://127.0.0.1:9050'
+}
 app = Flask(__name__)
 
 @app.route('/')
@@ -15,7 +18,7 @@ def get_transcript():
         return jsonify({"error": "No videoId provided."}), 400
 
     try:
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+        transcript = YouTubeTranscriptApi.get_transcript(video_id, proxies=proxies)
         transcript_text = " ".join([item['text'] for item in transcript])
         return jsonify({"videoId": video_id, "transcript": transcript_text}), 200
 
