@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-import subprocess
+from youtube_transcript_api import YouTubeTranscriptApi
 import os
 
 app = Flask(__name__)
@@ -11,30 +11,13 @@ def home():
 @app.route('/get_transcript', methods=['GET'])
 def get_transcript():
     video_id = request.args.get('videoId')
-    video_url = f"https://www.youtube.com/watch?v={video_id}"
+    if not video_id:
+        return jsonify({"error": "No videoId provided."}), 400
 
     try:
-        subprocess.run([
-            "yt-dlp",
-            "--write-auto-sub",
-            "--sub-lang", "en",
-            "--skip-download",
-            "--convert-subs", "srt",
-            "-o", "%(id)s",
-            video_url
-        ], check=True)
-
-        transcript_file = f"{video_id}.en.srt"
-        
-        if not os.path.exists(transcript_file):
-            return jsonify({"error": "Transcript file not found."}), 404
-
-        with open(transcript_file, "r", encoding="utf-8") as file:
-            transcript_text = file.read()
-
-        os.remove(transcript_file)
-
-        return jsonify({"videoId": video_id, "transcript": transcript_text})
+        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+        transcript_text = " ".join([item['text'] for item in transcript])
+        return jsonify({"videoId": video_id, "transcript": transcript_text}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
